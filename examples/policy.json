@@ -1,0 +1,7 @@
+{
+  "chainAllowlist": [8453, 84532],
+  "recipientAllowlist": [],
+  "maxPerTxWei": "0.05eth",
+  "maxPerDayWei": "0.20eth",
+  "requireApprovalOverWei": "0.01eth"
+}
