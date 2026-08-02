@@ -1,7 +1,26 @@
 {
   "chainAllowlist": [8453, 84532],
   "recipientAllowlist": [],
+  "recipientDenylist": [],
+
   "maxPerTxWei": "0.05eth",
   "maxPerDayWei": "0.20eth",
-  "requireApprovalOverWei": "0.01eth"
+  "requireApprovalOverWei": "0.01eth",
+
+  "tokens": {
+    "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": {
+      "symbol": "USDC",
+      "decimals": 6,
+      "maxPerTx": "250.0",
+      "maxPerDay": "1000.0",
+      "requireApprovalOver": "100.0"
+    }
+  },
+
+  "allowedActions": ["value_transfer", "allowance", "trade", "external_payment"],
+  "allowUnlimitedAllowance": false,
+
+  "approvalTtlSeconds": 900,
+  "approverPublicKey": null,
+  "gatePublicKey": null
 }
