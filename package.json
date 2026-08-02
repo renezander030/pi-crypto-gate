@@ -1,7 +1,6 @@
 {
   "name": "pi-crypto-gate",
   "version": "0.2.0",
-  "private": true,
   "description": "Pi-family policy gate between an AI agent and an onchain wallet: propose a payment, the gate allows it, holds it for human approval, or blocks it, with an append-only receipt log. Sits downstream of a crypto screener; pairs with pi-gate.",
   "type": "module",
   "bin": {
@@ -10,6 +9,12 @@
   "exports": {
     ".": "./src/index.js"
   },
+  "files": [
+    "src",
+    "bin",
+    "examples",
+    "README.md"
+  ],
   "scripts": {
     "demo": "node bin/pi-crypto-gate.js demo",
     "test": "node --test"
