@@ -2,6 +2,16 @@
   "name": "pi-crypto-gate",
   "version": "0.2.0",
   "description": "Pi-family policy gate between an AI agent and an onchain wallet: propose a payment, the gate allows it, holds it for human approval, or blocks it, with an append-only receipt log. Sits downstream of a crypto screener; pairs with pi-gate.",
+  "license": "MIT",
+  "author": "Rene Zander",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/renezander030/pi-crypto-gate.git"
+  },
+  "homepage": "https://github.com/renezander030/pi-crypto-gate#readme",
+  "bugs": {
+    "url": "https://github.com/renezander030/pi-crypto-gate/issues"
+  },
   "type": "module",
   "bin": {
     "pi-crypto-gate": "bin/pi-crypto-gate.js"
@@ -13,7 +23,8 @@
     "src",
     "bin",
     "examples",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "demo": "node bin/pi-crypto-gate.js demo",
