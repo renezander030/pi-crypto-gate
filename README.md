@@ -71,6 +71,8 @@ The gate always runs before the executor. At execution time the policy is re-che
 
 The pattern maps onto agent-payment rails like x402 and Base MCP, where an agent can initiate value transfer through a tool call. The gate is the guardrail in front of that tool, independent of which chain or client is underneath.
 
+The gate decides; it does not transport. How a transaction reaches a chain (signer, RPC, relay, mempool exposure) is the executor's concern, wired in downstream by the integrator.
+
 Part of the pi-* agent-harness family, alongside [pi-gate](https://github.com/renezander030/pi-gate), which does the same job for code changes.
 
 ## Roadmap
