@@ -67,6 +67,12 @@ The gate always runs before the executor. At execution time the policy is re-che
 
 **[Full reference](https://github.com/renezander030/pi-crypto-gate/blob/main/docs/reference.md)**: policy keys, assets and caps, action classes, the approval boundary, receipt verification, and the library API.
 
+## Design notes
+
+- **[Assume the bad transaction](https://cedricbrown.xyz/writing/assume-the-bad-transaction/)** explains how the allow, hold, and block flow, exact-action approval grants, and receipt log fit together.
+- **[Refusals need receipts](https://cedricbrown.xyz/writing/refusals-need-receipts/)** makes the case for keeping durable, verifiable records of the actions a gate stops.
+- **[Hold is not a third decision](https://cedricbrown.xyz/writing/hold-is-not-a-third-decision/)** follows an ERC-8354 correction from binary enforcement to richer reason codes and the release object behind a held action.
+
 ## Where this fits
 
 The pattern maps onto agent-payment rails like x402 and Base MCP, where an agent can initiate value transfer through a tool call. The gate is the guardrail in front of that tool, independent of which chain or client is underneath.
