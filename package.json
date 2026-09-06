@@ -28,7 +28,9 @@
     "zk/src",
     "zk/circuits",
     "zk/artifacts",
-    "zk/README.md"
+    "zk/README.md",
+    "fhe/src",
+    "fhe/README.md"
   ],
   "scripts": {
     "demo": "node bin/pi-crypto-gate.js demo",
@@ -36,7 +38,8 @@
     "zk:build": "node zk/scripts/build.mjs",
     "zk:ceremony": "node zk/scripts/build.mjs --ceremony",
     "zk:e2e": "sh zk/scripts/e2e-anvil.sh",
-    "test:contracts": "forge test --root zk/contracts"
+    "test:contracts": "forge test --root zk/contracts",
+    "fhe:demo": "sh fhe/scripts/demo.sh"
   },
   "engines": {
     "node": ">=20"
@@ -62,23 +65,32 @@
     "eip-1271",
     "spending-policy",
     "agent-payments",
-    "wallet-guardrails"
+    "wallet-guardrails",
+    "homomorphic-encryption",
+    "fhe",
+    "sealed-policy",
+    "microsoft-seal"
   ],
   "devDependencies": {
     "circom2": "^0.2.23",
     "circomlib": "^2.0.5",
     "circomlibjs": "^0.1.7",
+    "node-seal": "^7.0.0",
     "snarkjs": "^0.7.6"
   },
   "peerDependencies": {
+    "circomlibjs": "^0.1.7",
     "snarkjs": "^0.7.6",
-    "circomlibjs": "^0.1.7"
+    "node-seal": "^7.0.0"
   },
   "peerDependenciesMeta": {
     "snarkjs": {
       "optional": true
     },
     "circomlibjs": {
+      "optional": true
+    },
+    "node-seal": {
       "optional": true
     }
   }
