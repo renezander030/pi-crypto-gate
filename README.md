@@ -2,13 +2,32 @@
 
 **A policy gate between an AI agent and an onchain wallet.** The agent proposes a payment. The gate **allows** it, **holds** it for a human, or **blocks** it, and writes every decision to a hash-chained receipt log. Nothing reaches a chain until policy agrees.
 
-**New: an allow can now be proven, not just logged.** With the optional zero-knowledge path, a payment the gate allows comes with a Groth16 proof that it is within a per-transaction cap the owner committed to in advance. An [ERC-8366](https://github.com/fractalyze/erc-8366) account verifies that proof on chain and releases the funds, and the chain never learns the cap. The cap moves from a check inside this process into the account itself: an attacker who takes over the agent's machine can still spend at most the cap, once per payment the owner registered.
+## In plain words
 
-| | the gate alone | with the zk path |
+An AI agent that can pay for things will, sooner or later, try to pay for the wrong thing: a prompt it should not have trusted, a bad tool result, a loop. This tool is the person at the till who says yes, no, or "let me ask a human". Every payment the agent proposes is checked against your rules, and every decision is written down where nobody can quietly edit it.
+
+Two optional pieces keep the agent honest without ever showing it the rulebook:
+
+- **The receipt of proof (`zk/`).** The agent hands the wallet a sealed receipt that says "this payment is under my limit". The wallet can check the receipt is genuine without learning the limit. Over the limit, no such receipt can be made, and the wallet keeps the money, even if the agent's computer was hacked.
+- **The sealed rulebook (`fhe/`).** Your limits sit on the agent's computer in a locked box. The computer can add up and compare numbers through the box without opening it, so it works out "is this within the rules" while never seeing a rule. Only your key opens the answer, and the answer is yes or no, never the numbers.
+
+| you want | piece | why it works |
 |---|---|---|
-| the cap is enforced by | this process, off chain | the account contract, on chain, plus this process |
-| the chain sees | the transaction | the payment and a commitment, never the cap |
-| an attacker on the agent's host can spend | whatever the wallet key allows | at most the cap, once per registered payment |
+| the agent cannot spend above the cap, even from a hacked computer | proof | the wallet itself refuses; the check does not run on the agent's machine |
+| the agent cannot see its limits, so it cannot creep up to them | sealed rulebook | the numbers never exist in the clear on that machine |
+| several agents share one daily budget and none of them knows how much is left | sealed rulebook | the running total is added up inside the box |
+| the wallet and the chain learn nothing about your rules | both | the proof hides the cap, the box hides every number |
+
+One honest limit: a hacked computer that cannot read the rules could still lie about the answer. That is what the proof is for, and the two combine: the box keeps the rules secret, the proof keeps the answer honest.
+
+## What each piece adds
+
+| | the gate alone | with the proof (zk) | with the sealed rulebook (fhe) |
+|---|---|---|---|
+| the cap is enforced by | this process, off chain | the account contract, on chain | this process, on sealed numbers |
+| who can read the rules | the agent host | the agent host | only your key box |
+| the chain sees | the transaction | the payment and a commitment, never the cap | the transaction |
+| an attacker on the agent's host can | spend whatever the wallet key allows | spend at most the cap, once per registered payment | spend whatever the wallet key allows, without learning a single rule |
 
 The design assumption is unchanged: an autonomous agent will eventually propose a payment it should not make (a prompt injection, a bad tool result, a loop). This is the layer that assumes that and refuses, and now it can hand the chain the receipt of that refusal's opposite: a proof the allowed payment was within bounds.
 
@@ -91,11 +110,27 @@ npm run zk:e2e             # the whole flow on a local Anvil, refusals included
 
 The proving key in `zk/artifacts/` is from a dev ceremony: tests and Anvil, not value. The circuit, the prover, the trust model and the v2 predicates (daily budget, recipient allowlist, merchant-signed quote) are in [`zk/README.md`](zk/README.md).
 
+## Sealed rulebook (optional)
+
+Five commands, two directories: the key box (your approval box) and the agent host. The host holds sealed numbers and no key.
+
+```
+pi-crypto-gate fhe seal --policy policy.json --token <0xaddr>            # key box: seal maxPerTx, maxPerDay, requireApprovalOver
+pi-crypto-gate fhe evaluate --to 0x3333... --amount 150.0 --token <0xaddr> --chain 31337   # host: a sealed verdict
+pi-crypto-gate fhe open .pi-crypto-gate/fhe/<id>.verdict.json           # key box: three signs, one signed decision
+pi-crypto-gate fhe apply .pi-crypto-gate/fhe/<id>.verdict.json          # host: record it, count it in the sealed daily total
+pi-crypto-gate fhe status
+```
+
+`npm run fhe:demo` walks through it: a 150 USDC payment held for a human, two agents sharing a 600 USDC day without seeing the total, a 300 USDC payment refused by a cap that was never on the machine, and two probes for the threshold that only produce receipts. About 15 ms per verdict, one optional dependency (`node-seal`, Microsoft SEAL). The scheme, who can do what, and what v1 leaves out are in [`fhe/README.md`](fhe/README.md).
+
 ## Documentation
 
 **[Full reference](https://github.com/renezander030/pi-crypto-gate/blob/main/docs/reference.md)**: policy keys, assets and caps, action classes, the approval boundary, receipt verification, and the library API.
 
 **[The zk path](zk/README.md)**: the policy circuit, who can do what, the commands, the layout, and what v1 deliberately leaves to v2.
+
+**[The sealed policy](fhe/README.md)**: the sealed rulebook in plain words, how the checks run on sealed numbers, the commands, and the honest limits.
 
 ## Design notes
 
@@ -122,9 +157,10 @@ Part of the pi-* agent-harness family, alongside [pi-gate](https://github.com/re
 ```
 npm test                   # 100 tests on Node's built-in runner; the proving tests skip until npm run zk:build
 npm run test:contracts     # Foundry, against the ERC-8366 account (git submodule update --init first)
+npm run fhe:demo           # the sealed rulebook, key box and agent host as two directories
 ```
 
-The core gate still has no runtime dependencies and no build step. The zk path adds two optional peer dependencies (snarkjs, circomlibjs) that are only needed for `pi-crypto-gate zk ...`.
+The core gate still has no runtime dependencies and no build step. The zk path adds two optional peer dependencies (snarkjs, circomlibjs) for `pi-crypto-gate zk ...`, the sealed policy one (node-seal) for `pi-crypto-gate fhe ...`.
 
 ## License
 

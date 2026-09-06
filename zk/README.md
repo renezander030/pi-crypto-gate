@@ -1,5 +1,11 @@
 # The zero-knowledge spending policy
 
+## In plain words
+
+The agent hands the wallet a sealed receipt that says "this payment is under my limit". The wallet can check that the receipt is genuine without ever learning the limit, and over the limit no such receipt can be made at all. So the wallet itself keeps the money, even if the agent's computer was hacked, and nobody watching the chain sees your limit, only that the payment was inside it.
+
+What this does not hide: the payment itself is public on this rail, and the agent's own computer still knows the limit, because it is the one writing the receipt. The [sealed rulebook](../fhe/README.md) is the piece for that.
+
 The gate decides off chain. This folder turns one of its decisions, **allow**, into something a chain can check: a Groth16 proof that the payment is within a per-transaction cap the owner committed to in advance, without the cap ever appearing on chain.
 
 It reuses the [ERC-8366 reference implementation](https://github.com/fractalyze/erc-8366) (Zero-Knowledge Spending Policies) unchanged, as a git submodule: the escrow account, its ERC-1271 check, the USDC test double, the envelope format. What pi-crypto-gate adds is the policy circuit (its cap), the prover side (a receipt in, an envelope out) and the wiring to the receipt log. No new protocol.

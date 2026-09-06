@@ -10,6 +10,7 @@ Full configuration and API detail for [pi-crypto-gate](https://github.com/reneza
 - [Receipts](#receipts)
 - [Policy keys](#policy-keys)
 - [Zero-knowledge spending policy](#zero-knowledge-spending-policy)
+- [Sealed policy](#sealed-policy)
 - [Library](#library)
 
 ## Assets and caps
@@ -128,6 +129,26 @@ The envelope file holds `envelope` (the signature bytes), the `proof` (Solidity-
 | circuit artifacts | `PI_CRYPTO_GATE_ZK_DIR` | `zk/build` (wasm) and `zk/artifacts` (zkey, vkey) |
 
 Dependencies: `snarkjs` and `circomlibjs`, optional peers; `npm run zk:build` needs `circom2` and `circomlib` (dev). The committed proving key is a dev ceremony, see `zk/artifacts/README.md`.
+
+## Sealed policy
+
+Optional. The token's `maxPerTx`, `maxPerDay` and `requireApprovalOver` are sealed with homomorphic encryption (Microsoft SEAL, BFV, via `node-seal`) by a key box, and the agent host checks a payment against them without holding a key or a clear number. In plain words and with the trust model: [`fhe/README.md`](../fhe/README.md).
+
+| command | where | does |
+|---|---|---|
+| `fhe seal --policy <file> --token <0xaddr> [--keys <dir>] [--bundle <dir>] [--force]` | key box | keys (created once, reused after), then the sealed cap, daily cap, threshold and a sealed zero into the bundle; refuses a key box inside the working directory |
+| `fhe evaluate --to <0xaddr> --amount <units> --token <0xaddr> --chain <id> [--bundle <dir>] [--log <path>] [--out <file>] [--json]` | agent host | three blinded sealed differences and the sealed next total; writes the verdict file; `fhe-sealed` receipt |
+| `fhe open <verdict.json> [--keys <dir>] [--json]` | key box | opens the signs, decides with the gate's reason codes, signs the decision with the approver key when present, writes it into the file |
+| `fhe apply <verdict.json> [--bundle <dir>] [--policy <file>] [--log <path>] [--json]` | agent host | checks the signature against `policy.approverPublicKey` when set, `fhe-opened` receipt, counts the payment in the sealed ledger unless blocked; exit 0 allow or held, 3 blocked, 4 refused |
+| `fhe status [--bundle <dir>] [--keys <dir>] [--json]` | either | bundle metadata, whether keys are present, a warning when keys sit inside the working directory |
+
+Decisions and reason codes are the gate's: `allow`, `needs_approval` (`approval-required-over-threshold`), `block` (`per-tx-cap-exceeded`, `daily-cap-exceeded`). Equal amounts behave as in the clear gate: at the cap is allowed, at the threshold is held. Values are limited to 2^36 - 1 base units; a new UTC day restarts the sealed total from the sealed zero. Allow and deny lists are not sealed in v1 and stay with the clear gate.
+
+| path | env var | default |
+| --- | --- | --- |
+| keys (key box) | `PI_CRYPTO_GATE_FHE_KEYS` | `<approval store>/fhe-keys` |
+| bundle (agent host) | `PI_CRYPTO_GATE_FHE_BUNDLE` | `./.pi-crypto-gate/fhe/bundle` |
+| verdicts | | `<log dir>/fhe/<id>.verdict.json` |
 
 ## Library
 
