@@ -1,0 +1,6 @@
+[submodule "zk/contracts/lib/forge-std"]
+	path = zk/contracts/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
+[submodule "zk/contracts/lib/erc-8366"]
+	path = zk/contracts/lib/erc-8366
+	url = https://github.com/fractalyze/erc-8366

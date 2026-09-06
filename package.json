@@ -24,11 +24,19 @@
     "bin",
     "examples",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "zk/src",
+    "zk/circuits",
+    "zk/artifacts",
+    "zk/README.md"
   ],
   "scripts": {
     "demo": "node bin/pi-crypto-gate.js demo",
-    "test": "node --test"
+    "test": "node --test",
+    "zk:build": "node zk/scripts/build.mjs",
+    "zk:ceremony": "node zk/scripts/build.mjs --ceremony",
+    "zk:e2e": "sh zk/scripts/e2e-anvil.sh",
+    "test:contracts": "forge test --root zk/contracts"
   },
   "engines": {
     "node": ">=20"
@@ -43,5 +51,23 @@
     "hitl",
     "pi-gate",
     "x402"
-  ]
+  ],
+  "devDependencies": {
+    "circom2": "^0.2.23",
+    "circomlib": "^2.0.5",
+    "circomlibjs": "^0.1.7",
+    "snarkjs": "^0.7.6"
+  },
+  "peerDependencies": {
+    "snarkjs": "^0.7.6",
+    "circomlibjs": "^0.1.7"
+  },
+  "peerDependenciesMeta": {
+    "snarkjs": {
+      "optional": true
+    },
+    "circomlibjs": {
+      "optional": true
+    }
+  }
 }

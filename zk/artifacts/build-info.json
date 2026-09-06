@@ -1,0 +1,7 @@
+{
+  "builtAt": "2026-09-06T03:51:21.750Z",
+  "circuit": "zk/circuits/cap_policy.circom",
+  "constraints": 460,
+  "potPower": 12,
+  "ceremony": "dev, single contributor"
+}
