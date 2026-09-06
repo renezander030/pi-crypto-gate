@@ -1,10 +1,16 @@
 # pi-crypto-gate
 
-A policy gate that sits between an AI agent and an onchain wallet.
+**A policy gate between an AI agent and an onchain wallet.** The agent proposes a payment. The gate **allows** it, **holds** it for a human, or **blocks** it, and writes every decision to a hash-chained receipt log. Nothing reaches a chain until policy agrees.
 
-An agent proposes an action. The gate **allows** it, **holds** it for a human, or **blocks** it, and writes every decision to a hash-chained receipt log. Nothing reaches a chain until policy agrees.
+**New: an allow can now be proven, not just logged.** With the optional zero-knowledge path, a payment the gate allows comes with a Groth16 proof that it is within a per-transaction cap the owner committed to in advance. An [ERC-8366](https://github.com/fractalyze/erc-8366) account verifies that proof on chain and releases the funds, and the chain never learns the cap. The cap moves from a check inside this process into the account itself: an attacker who takes over the agent's machine can still spend at most the cap, once per payment the owner registered.
 
-The design assumption: an autonomous agent will eventually propose a payment it should not make (a prompt injection, a bad tool result, a loop). This is the layer that assumes that and refuses.
+| | the gate alone | with the zk path |
+|---|---|---|
+| the cap is enforced by | this process, off chain | the account contract, on chain, plus this process |
+| the chain sees | the transaction | the payment and a commitment, never the cap |
+| an attacker on the agent's host can spend | whatever the wallet key allows | at most the cap, once per registered payment |
+
+The design assumption is unchanged: an autonomous agent will eventually propose a payment it should not make (a prompt injection, a bad tool result, a loop). This is the layer that assumes that and refuses, and now it can hand the chain the receipt of that refusal's opposite: a proof the allowed payment was within bounds.
 
 ## The failing case is the point
 
@@ -63,9 +69,33 @@ The default executor is a dry run. It prints the transaction it would broadcast 
 
 The gate always runs before the executor. At execution time the policy is re-checked against live per-asset spend.
 
+## Zero-knowledge spending policy (optional)
+
+Four commands turn an allow into a proof the chain checks, in the envelope format of ERC-8366. Nothing else in the gate changes.
+
+```
+pi-crypto-gate zk init --token <0xaddr>          # a private salt for this token's cap
+pi-crypto-gate zk commit --policy policy.json    # Poseidon([1, maxPerTx, salt]) -> paramsCommit, for allowPolicy()
+pi-crypto-gate propose --to 0x3333... --amount 150.0 --token <0xaddr> --chain 31337 --policy policy.json
+pi-crypto-gate zk prove <receipt-id> --account <0xaddr>   # Groth16 proof + envelope for the allowed payment
+pi-crypto-gate zk verify .pi-crypto-gate/zk/<receipt-id>.envelope.json
+```
+
+The owner registers `paramsCommit` on the ERC-8366 account for the payment's nonce (the receipt's action hash). Any facilitator then settles the payment with plain USDC `transferWithAuthorization(...)`, the envelope in the signature slot. The account rebuilds the public inputs `[to, value, paramsCommit, account, chainId]` itself and verifies the proof; a proof for a higher value, another recipient, another account or another chain does not exist or does not verify, and a replay dies on the USDC nonce.
+
+```
+npm run zk:build           # compile the circuit (about 1 s; dev deps: circom2, snarkjs, circomlibjs)
+npm run test:contracts     # 10 Foundry tests: the fixture proof settles on the reference account
+npm run zk:e2e             # the whole flow on a local Anvil, refusals included
+```
+
+The proving key in `zk/artifacts/` is from a dev ceremony: tests and Anvil, not value. The circuit, the prover, the trust model and the v2 predicates (daily budget, recipient allowlist, merchant-signed quote) are in [`zk/README.md`](zk/README.md).
+
 ## Documentation
 
 **[Full reference](https://github.com/renezander030/pi-crypto-gate/blob/main/docs/reference.md)**: policy keys, assets and caps, action classes, the approval boundary, receipt verification, and the library API.
+
+**[The zk path](zk/README.md)**: the policy circuit, who can do what, the commands, the layout, and what v1 deliberately leaves to v2.
 
 ## Design notes
 
@@ -90,10 +120,11 @@ Part of the pi-* agent-harness family, alongside [pi-gate](https://github.com/re
 ## Tests
 
 ```
-npm test
+npm test                   # 100 tests on Node's built-in runner; the proving tests skip until npm run zk:build
+npm run test:contracts     # Foundry, against the ERC-8366 account (git submodule update --init first)
 ```
 
-76 tests on Node's built-in runner. No build step.
+The core gate still has no runtime dependencies and no build step. The zk path adds two optional peer dependencies (snarkjs, circomlibjs) that are only needed for `pi-crypto-gate zk ...`.
 
 ## License
 

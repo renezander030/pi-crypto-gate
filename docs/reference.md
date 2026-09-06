@@ -9,6 +9,7 @@ Full configuration and API detail for [pi-crypto-gate](https://github.com/reneza
 - [The approval boundary](#the-approval-boundary)
 - [Receipts](#receipts)
 - [Policy keys](#policy-keys)
+- [Zero-knowledge spending policy](#zero-knowledge-spending-policy)
 - [Library](#library)
 
 ## Assets and caps
@@ -103,6 +104,30 @@ An empty `recipientAllowlist` or `chainAllowlist` means "no restriction on that 
 | approval store | `PI_CRYPTO_GATE_APPROVAL_DIR` | `~/.pi-crypto-gate/approvals` |
 | approver key | `PI_CRYPTO_GATE_APPROVER_KEY` | `<approval store>/approver.key` |
 | gate key | `PI_CRYPTO_GATE_SIGNING_KEY` | unset (receipts written unsigned) |
+
+## Zero-knowledge spending policy
+
+Optional. The gate's `allow` for a token payment can be turned into a Groth16 proof that the amount is within that token's `maxPerTx`, without revealing the cap, in the envelope format of [ERC-8366](https://github.com/fractalyze/erc-8366). The circuit, trust model and Foundry tests live under [`zk/`](../zk/README.md).
+
+| command | does |
+|---|---|
+| `zk init --token <0xaddr> [--params <file>] [--force]` | writes the params file (mode 600): `version`, `token`, a fresh salt |
+| `zk commit [--policy <file>] [--json]` | `paramsCommit = Poseidon([1, maxPerTx, salt])` as bytes32, for `allowPolicy(nonce, paramsCommit, verifier)` |
+| `zk prove <receipt-id> --account <0xaddr> [--valid-for <s>] [--out <file>] [--json]` | proves an allowed or approved receipt; writes the envelope file; appends a `proved` event to the receipt log |
+| `zk verify <envelope.json> [--json]` | decodes the envelope, rebuilds the public inputs as the account does, verifies the proof |
+
+The flow: `propose` (the gate allows) → the owner registers the commitment for the receipt's nonce, `0x` + `actionHash` → `zk prove` → any facilitator calls USDC `transferWithAuthorization(account, to, value, 0, validBefore, nonce, envelope)`.
+
+The proof binds `to`, `value`, `paramsCommit`, `account`, `chainId`; it hides `cap` and `salt`. `zk prove` refuses a blocked receipt, a held receipt without an approval, a receipt in another token, and any value above the cap (exit 4). The `proved` receipt event carries `account`, `chainId`, `nonce`, `paramsCommit` and the sha256 of the envelope, so the audit trail names the proof that left the gate.
+
+The envelope file holds `envelope` (the signature bytes), the `proof` (Solidity-ordered `a`, `b`, `c`), the `authorization` fields, `publicSignals`, and a `settle` block with the exact `transferWithAuthorization` arguments.
+
+| path | env var | default |
+| --- | --- | --- |
+| zk params (salt) | `PI_CRYPTO_GATE_ZK_PARAMS` | `./.pi-crypto-gate/zk-params.json` |
+| circuit artifacts | `PI_CRYPTO_GATE_ZK_DIR` | `zk/build` (wasm) and `zk/artifacts` (zkey, vkey) |
+
+Dependencies: `snarkjs` and `circomlibjs`, optional peers; `npm run zk:build` needs `circom2` and `circomlib` (dev). The committed proving key is a dev ceremony, see `zk/artifacts/README.md`.
 
 ## Library
 
