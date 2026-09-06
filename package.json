@@ -1,7 +1,7 @@
 {
   "name": "pi-crypto-gate",
-  "version": "0.2.0",
-  "description": "Pi-family policy gate between an AI agent and an onchain wallet: propose a payment, the gate allows it, holds it for human approval, or blocks it, with an append-only receipt log. Sits downstream of a crypto screener; pairs with pi-gate.",
+  "version": "0.3.0",
+  "description": "Pi-family policy gate between an AI agent and an onchain wallet: propose a payment, the gate allows it, holds it for human approval, or blocks it, with an append-only receipt log and an optional zero-knowledge spending policy (ERC-8366): a Groth16 proof that an allowed payment is within a private per-transaction cap, verified on chain. Sits downstream of a crypto screener; pairs with pi-gate.",
   "license": "MIT",
   "author": "Rene Zander",
   "repository": {
@@ -50,7 +50,19 @@
     "approval",
     "hitl",
     "pi-gate",
-    "x402"
+    "x402",
+    "zero-knowledge",
+    "zk-snark",
+    "groth16",
+    "erc-8366",
+    "circom",
+    "snarkjs",
+    "usdc",
+    "erc-3009",
+    "eip-1271",
+    "spending-policy",
+    "agent-payments",
+    "wallet-guardrails"
   ],
   "devDependencies": {
     "circom2": "^0.2.23",
