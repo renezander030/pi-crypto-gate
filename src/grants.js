@@ -3,9 +3,9 @@
 //
 // The grant store and the approver key live outside the agent's working root,
 // so an agent can request an approval but cannot mint one.
-import { writeFileSync, readFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
+import { writeFileSync, readFileSync, existsSync, mkdirSync, readdirSync, realpathSync } from "node:fs";
 import { homedir } from "node:os";
-import { join, resolve, sep } from "node:path";
+import { basename, dirname, join, resolve, sep } from "node:path";
 import { canonicalJson } from "./canonical.js";
 import { signMessage, verifyMessage } from "./signing.js";
 
@@ -27,10 +27,32 @@ function consumedPath(actionHash, dir = approvalDir()) {
   return join(dir, `${actionHash}.consumed`);
 }
 
-/** True when `child` sits inside `parent`. */
+/**
+ * Canonical absolute form of a path: symlinks resolved over the longest
+ * existing prefix, the rest appended as written. Two spellings of one place
+ * compare equal, so an alias (macOS `/var` -> `/private/var`, a symlinked
+ * directory) cannot slip an approval store past the boundary check.
+ */
+export function canonicalPath(path) {
+  const abs = resolve(path);
+  const tail = [];
+  let head = abs;
+  for (;;) {
+    try {
+      return join(realpathSync.native(head), ...tail);
+    } catch {
+      const parent = dirname(head);
+      if (parent === head) return abs;
+      tail.unshift(basename(head));
+      head = parent;
+    }
+  }
+}
+
+/** True when `child` sits inside `parent`, comparing canonical paths. */
 export function isInside(parent, child) {
-  const p = resolve(parent);
-  const c = resolve(child);
+  const p = canonicalPath(parent);
+  const c = canonicalPath(child);
   return c === p || c.startsWith(p.endsWith(sep) ? p : p + sep);
 }
 
