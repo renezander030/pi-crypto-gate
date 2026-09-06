@@ -5,3 +5,8 @@ node_modules/
 .env.*
 coverage/
 .pi-crypto-gate/
+
+# zk build artifacts (regenerate with: npm run zk:build)
+zk/build/
+zk/contracts/out/
+zk/contracts/cache/

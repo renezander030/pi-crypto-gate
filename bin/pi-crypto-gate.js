@@ -448,6 +448,11 @@ Usage:
   pi-crypto-gate verify [--pubkey <b64>]  Recompute the receipt chain and signatures
   pi-crypto-gate grants [--json]          Show approval grants and their state
   pi-crypto-gate keygen --approver|--gate Create an Ed25519 key
+  pi-crypto-gate zk init --token <0xaddr>  Create the private salt behind the cap commitment
+  pi-crypto-gate zk commit [--policy <f>]  Commitment to the token's per-tx cap, for allowPolicy()
+  pi-crypto-gate zk prove <receipt-id> --account <0xaddr> [--valid-for <s>] [--out <file>] [--json]
+                                          Groth16 proof that an allowed payment is within the cap
+  pi-crypto-gate zk verify <envelope.json> Check a proof envelope locally
   pi-crypto-gate help
 
 Action classes: value_transfer, allowance, trade, external_payment.
@@ -455,7 +460,22 @@ Action classes: value_transfer, allowance, trade, external_payment.
 Exit codes: allow/approval-pending = 0, blocked = 3, refused = 4, usage = 2.
 Receipt log:    $PI_CRYPTO_GATE_RECEIPT_LOG or ./.pi-crypto-gate/receipts.jsonl
 Approval store: $PI_CRYPTO_GATE_APPROVAL_DIR or ~/.pi-crypto-gate/approvals
-Approver key:   $PI_CRYPTO_GATE_APPROVER_KEY   Gate key: $PI_CRYPTO_GATE_SIGNING_KEY`;
+Approver key:   $PI_CRYPTO_GATE_APPROVER_KEY   Gate key: $PI_CRYPTO_GATE_SIGNING_KEY
+ZK params:      $PI_CRYPTO_GATE_ZK_PARAMS or ./.pi-crypto-gate/zk-params.json (optional zk path)`;
+
+/**
+ * Zero-knowledge spending policy (ERC-8366). Optional: needs the snarkjs and
+ * circomlibjs peer dependencies and the built circuit (npm run zk:build).
+ */
+function cmdZk(args) {
+  return import("../zk/src/cli.js")
+    .then(({ runZk }) => runZk(args))
+    .then(() => process.exit(EXIT.allow))
+    .catch((err) => {
+      console.error(`zk: ${err?.message ?? err}`);
+      process.exit(EXIT.refused);
+    });
+}
 
 function main() {
   const [cmd, ...rest] = process.argv.slice(2);
@@ -469,6 +489,7 @@ function main() {
     case "grants": return cmdGrants(args);
     case "keygen": return cmdKeygen(args);
     case "demo": return cmdDemo();
+    case "zk": return cmdZk(args);
     case "help": case "--help": case "-h": case undefined:
       console.log(HELP); return;
     default:

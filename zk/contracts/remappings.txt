@@ -1,0 +1,2 @@
+forge-std/=lib/forge-std/src/
+erc-8366/=lib/erc-8366/src/
