@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { issueGrant, verifyGrant, claimGrant, consumeGrant, readGrant, isInside } from "../src/grants.js";
 import { generateKeypair } from "../src/signing.js";
+import { mkdirSync as makeDir, symlinkSync as makeLink } from "node:fs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const HASH = "a".repeat(64);
@@ -131,4 +132,18 @@ test("isInside recognises a store nested in the agent root", () => {
   assert.equal(isInside("/home/agent/project", "/home/agent/project"), true);
   assert.equal(isInside("/home/agent/project", "/home/agent/approvals"), false);
   assert.equal(isInside("/home/agent/project", "/home/agent/project-other"), false);
+});
+
+test("isInside sees through a path alias to the same directory", () => {
+  const root = mkdtempSync(join(tmpdir(), "pcg-alias-"));
+  const real = join(root, "agent-root");
+  makeDir(real);
+  const link = join(root, "alias");
+  makeLink(real, link, "dir");
+  // The store is addressed through the alias, the root through its real path.
+  assert.equal(isInside(real, join(link, ".approvals")), true);
+  assert.equal(isInside(link, join(real, ".approvals")), true);
+  // A path that does not exist yet still canonicalises through its parents.
+  assert.equal(isInside(real, join(link, "not", "yet", "there")), true);
+  assert.equal(isInside(real, join(root, "elsewhere")), false);
 });

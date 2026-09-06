@@ -21,6 +21,7 @@ export {
   isConsumed,
   listGrants,
   isInside,
+  canonicalPath,
 } from "./grants.js";
 export {
   generateKeypair,
