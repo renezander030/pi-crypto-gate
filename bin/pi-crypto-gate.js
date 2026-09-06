@@ -453,6 +453,12 @@ Usage:
   pi-crypto-gate zk prove <receipt-id> --account <0xaddr> [--valid-for <s>] [--out <file>] [--json]
                                           Groth16 proof that an allowed payment is within the cap
   pi-crypto-gate zk verify <envelope.json> Check a proof envelope locally
+  pi-crypto-gate fhe seal --policy <f> --token <0xaddr>   Key box: seal the token's caps and threshold for the agent host
+  pi-crypto-gate fhe evaluate --to <0xaddr> --amount <units> --token <0xaddr> --chain <id>
+                                          Agent host: a sealed verdict, computed without reading the rules
+  pi-crypto-gate fhe open <verdict.json>   Key box: open the three signs, sign the decision
+  pi-crypto-gate fhe apply <verdict.json>  Agent host: record the decision, count it in the sealed daily total
+  pi-crypto-gate fhe status                Where the keys and the bundle are
   pi-crypto-gate help
 
 Action classes: value_transfer, allowance, trade, external_payment.
@@ -461,7 +467,8 @@ Exit codes: allow/approval-pending = 0, blocked = 3, refused = 4, usage = 2.
 Receipt log:    $PI_CRYPTO_GATE_RECEIPT_LOG or ./.pi-crypto-gate/receipts.jsonl
 Approval store: $PI_CRYPTO_GATE_APPROVAL_DIR or ~/.pi-crypto-gate/approvals
 Approver key:   $PI_CRYPTO_GATE_APPROVER_KEY   Gate key: $PI_CRYPTO_GATE_SIGNING_KEY
-ZK params:      $PI_CRYPTO_GATE_ZK_PARAMS or ./.pi-crypto-gate/zk-params.json (optional zk path)`;
+ZK params:      $PI_CRYPTO_GATE_ZK_PARAMS or ./.pi-crypto-gate/zk-params.json (optional zk path)
+Sealed policy:  keys $PI_CRYPTO_GATE_FHE_KEYS or <approval store>/fhe-keys; bundle $PI_CRYPTO_GATE_FHE_BUNDLE or ./.pi-crypto-gate/fhe/bundle`;
 
 /**
  * Zero-knowledge spending policy (ERC-8366). Optional: needs the snarkjs and
@@ -473,6 +480,20 @@ function cmdZk(args) {
     .then(() => process.exit(EXIT.allow))
     .catch((err) => {
       console.error(`zk: ${err?.message ?? err}`);
+      process.exit(EXIT.refused);
+    });
+}
+
+/**
+ * Sealed policy (homomorphic encryption). Optional: needs the node-seal peer
+ * dependency. The agent host checks payments against rules it cannot read.
+ */
+function cmdFhe(args) {
+  return import("../fhe/src/cli.js")
+    .then(({ runFhe }) => runFhe(args))
+    .then(() => process.exit(EXIT.allow))
+    .catch((err) => {
+      console.error(`fhe: ${err?.message ?? err}`);
       process.exit(EXIT.refused);
     });
 }
@@ -490,6 +511,7 @@ function main() {
     case "keygen": return cmdKeygen(args);
     case "demo": return cmdDemo();
     case "zk": return cmdZk(args);
+    case "fhe": return cmdFhe(args);
     case "help": case "--help": case "-h": case undefined:
       console.log(HELP); return;
     default:
